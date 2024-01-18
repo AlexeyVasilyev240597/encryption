@@ -17,6 +17,19 @@ def validate_var(key: str, var_name: str) -> bool:
     else:
         return True
 
+def is_file_format_correct(full_file_name: str) -> bool:
+    try:
+        full_file_name = Path(full_file_name)
+    except:
+        return False
+    if not full_file_name.exists():
+        print(f'ERROR: not fourd {full_file_name}')
+        return False
+    file_name = str(full_file_name.name)
+    if not validate_var(file_name, 'file name'):
+        return False
+    return True
+
 # Caesar cipher
 def crypt_name(file_name: str, key:str, mode: str) -> str:
     if mode == 'en':
@@ -50,33 +63,28 @@ def crypt_content(path_to_files: Path, file_name: Path,
     
     file.close()
     new_file.close()
-    print('Done')
 
-def crypt_file(full_file_name: str, mode: str) -> None:
-    full_file_name = Path(full_file_name)
-    if not full_file_name.exists():
-        print(f'ERROR: not fourd {full_file_name}')
-        return
-    file_name = str(full_file_name.name)
-    if not validate_var(file_name, 'file name'):
-        return    
-    
+def crypt_file(full_file_name: str, mode: str) -> None:    
     print('Put the key:')
-    key = input()
-    if not validate_var(key, 'key'):
-        return
+    while validate_var(key := input(), 'key') == False:
+        pass
     
-    new_file_name = crypt_name(file_name, key, mode)
-    new_file_name = Path(new_file_name)
+    file_name = full_file_name.name
+    new_file_name = Path(crypt_name(file_name, key, mode))
+    # print(new_file_name)
     crypt_content(full_file_name.parent, file_name, new_file_name, key)
     
 if __name__ == '__main__':
-    args = sys.argv[1:]
-    help_message = 'Put the file name and mode: en to encrypt, de to decrypt'
-    if len(args) == 2:
-        if args[1] == 'en' or args[1] == 'de':
-            crypt_file(args[0], args[1])
-        else:
-            print(help_message)
-    else:
-        print(help_message)
+    print('Put the file name')
+    while is_file_format_correct(file_name := input()) == False:
+        pass
+    
+    print('Put mode: en to encrypt, de to decrypt')
+    is_mode_correct = lambda mode: True if mode == 'en' or mode == 'de' else False
+    while is_mode_correct(mode := input()) == False:
+        print('Wrong input')
+    
+    crypt_file(Path(file_name), mode)
+    
+    print('Done')
+    
