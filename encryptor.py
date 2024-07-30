@@ -1,13 +1,21 @@
-import sys
+import re
+
 from pathlib import Path
+from transliterate import translit
 
 alphabet = (list(map(chr, range(ord('A'), ord('Z')+1))) +
             list(map(chr, range(ord('a'), ord('z')+1))) +
             list(map(chr, range(ord('0'), ord('9')+1))) +
-            ['_', '-', '.'])
+            ['_', '-', '.']) 
             # ['(', ')', '_', '-', ',', '.', '*', ' '])
 
+def has_cyrillic(text):
+    return bool(re.search('[а-яА-Я]', text))
+
 def validate_var(key: str, var_name: str) -> bool:
+    if has_cyrillic(key):
+        key = translit(key, 'ru', reversed=True)
+        print(f'The key is transformed into: {key}\n')
     for c in key:
         if not c in alphabet:
             if c == ' ':
@@ -71,7 +79,7 @@ def crypt_file(full_file_name: str, mode: str) -> None:
     
     file_name = full_file_name.name
     new_file_name = Path(crypt_name(file_name, key, mode))
-    # print(new_file_name)
+    print(new_file_name)
     crypt_content(full_file_name.parent, file_name, new_file_name, key)
     
 if __name__ == '__main__':
