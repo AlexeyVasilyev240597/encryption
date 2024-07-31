@@ -1,6 +1,8 @@
-from enum import IntEnum
 import re
+import sys
+import time
 
+from enum import IntEnum
 from pathlib import Path
 from transliterate import translit
 
@@ -16,6 +18,7 @@ alphabet = (
         list(map(chr, range(ord('0'), ord('9')+1))) +
         ['_', '-', '.']) 
 
+common_key = ''
 class InputEditor:
     def fix_key(key: str) -> str:
         new_key = key
@@ -46,14 +49,31 @@ class InputEditor:
         full_file_name.rename(Path(full_file_name.parent / new_file_name))
         return True
 
-
 class Encryptor:    
-    def __init__(self, mode: Mode) -> None:
-        self.mode = mode
-
+    def __init__(self) -> None:
+        self.name_key = ''
+        self.content_key = ''
+        self.working_dir = ''
+        
+    def set_name_key(self, name_key: str) -> bool:
+        if len(name_key) >= MIN_KEY_LEN['FILE_NAME']:
+            self.name_key = name_key
+            return True
+        else:
+            print('The key is too short, use another one')
+            return False
+        
+    def set_content_key(self, content_key: str) -> bool:
+        if len(content_key) >= MIN_KEY_LEN['CONTENT']:
+            self.content_key = content_key
+            return True
+        else:
+            print('The key is too short, use another one')
+            return False
+    
     # Caesar cipher
-    def crypt_name(self, file_name: str, key: str) -> str:
-        shift_dir = self.mode.value
+    def crypt_name(self, file_name: str, mode: Mode, key: str) -> str:
+        shift_dir = mode.value
         N_a = len(alphabet)
         N_k = len(key)
 
@@ -61,18 +81,22 @@ class Encryptor:
         for i in range(len(new_file_name)):
             cur_pos = alphabet.index(new_file_name[i])
             new_file_name[i] = alphabet[(cur_pos + shift_dir*ord(key[i % N_k])) % N_a]
-        new_file_name = "".join([str(c) for c in new_file_name])
+        new_file_name = Path("".join([str(c) for c in new_file_name]))
 
         return new_file_name
     
     # XOR cipher
     def crypt_content(seflf, path_to_files: Path, file_name: Path, 
                     new_file_name: Path, key: str) -> None:
-        N_k = len(key)
         file     = open(path_to_files / file_name,     'rb')
         new_file = open(path_to_files / new_file_name, 'wb')
 
+        repeat_num = min(2**20 // len(key), Path(path_to_files / file_name).stat().st_size)
+        key = key * repeat_num
         key = bytes(key, 'utf-8')
+        N_k = len(key)
+        print(f"len(key) = {N_k}\n")
+        print(f"file size = {Path(path_to_files / file_name).stat().st_size}\n")
         while (block_in := file.read(N_k)):
             block_out = bytes(a ^ b for a, b in zip(block_in, key))
             new_file.write(block_out)
@@ -80,35 +104,24 @@ class Encryptor:
         file.close()
         new_file.close()
 
-    def crypt_file(self, full_file_name: str) -> None:    
-        print('Put the key for file name:')
-        while len(key := InputEditor.fix_key(input())) < MIN_KEY_LEN['FILE_NAME']:
-            print('The key is too short, use another one')
-            pass
-
+    def crypt_file(self, full_file_name: str, mode: Mode) -> None:    
         file_name = full_file_name.name
-        new_file_name = Path(self.crypt_name(file_name, key))
+        new_file_name = self.crypt_name(file_name, mode, self.name_key)
         print(new_file_name)
-        print('Put the key for file content:')
-        while len(key := InputEditor.fix_key(input())) < MIN_KEY_LEN['CONTENT']:
-            print('The key is too short, use another one')
-            pass
-        self.crypt_content(full_file_name.parent, file_name, new_file_name, key)
-    
-
+        self.crypt_content(full_file_name.parent, file_name, new_file_name, self.content_key)
     
 if __name__ == '__main__':
-    print('Put the file name')
-    while not InputEditor.is_file_name_correct(file_name := input()):
-        pass
+    args = sys.argv[1:]
+    coder = Encryptor()
+    file_name = args[0]
+    mode = args[1]
+    coder.set_name_key(args[2])
+    coder.set_content_key(args[3])
 
-    print('Put mode: en to encrypt, de to decrypt')
-    is_mode_correct = lambda mode: True if mode == 'en' or mode == 'de' else False
-    while not is_mode_correct(mode := input()):
-        print('Wrong input')
+    # is_mode_correct = lambda mode: True if mode == 'en' or mode == 'de' else False
     mode = Mode.ENCRYPT if mode == 'en' else Mode.DECRYPT
-    coder = Encryptor(mode)
-    coder.crypt_file(Path(file_name))
-
+    start_time = time.time()
+    coder.crypt_file(Path(file_name), mode)
+    print("--- %.3f seconds ---" % (time.time() - start_time))
     print('Done')
     
