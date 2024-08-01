@@ -1,56 +1,43 @@
 import glob
-import sys
+import os
+
+from encryptor import Mode, Encryptor
 
 from pathlib import Path
 
-
 class FileManager:
     def __init__(self) -> None:
-        self.working_dir = ''
+        self.working_dir = ''    
     
-    
-    def set_working_dir(self, working_dir: str) -> bool:
+    def set_working_dir(self, working_dir: str) -> str:
+        self.cur_dir = working_dir.split(os.sep)[-1]
         working_dir = Path(working_dir)
         if working_dir.exists():
             self.working_dir = working_dir
-            self.list_of_files()
-            return True
+            self._list_of_files()
+            return 'Working dir is set up'
         else:
-            print('Passed working dir name does not exist')
-            return False
+            return 'ERROR: Passed working dir name does not exist'
     
-    
-    def list_of_files(self):
+    def _list_of_files(self) -> str:
         if not self.working_dir:
-            print('The working dir is not set')
-            return
-        self.files_names = glob.glob(str(self.working_dir) + '\*')
-        self.files_names = [fn.split('\\')[-1] for fn in self.files_names]
+            return 'ERROR: The working dir is not set'
+        self.files_names = glob.glob(str(self.working_dir) + os.sep + '*')
+        self.files_names = [fn.split(os.sep)[-1] for fn in self.files_names]
         if len(self.files_names) == 0:
-            print(f'There are no files in {self.working_dir}')
+            return f'There are no files in {self.working_dir}'
+            
+        return f'{self.working_dir} contains the following file(s):'
+        # [print("%3d: %s" % (i, self.files_names[i])) for i in range(len(self.files_names))]
+    
+    def transform_names(self, mode: Mode) -> None:
+        self.new_files_names = []
+        for fn in self.files_names:
+            self.new_files_names.append(Encryptor.crypt_name(fn, mode, self.cur_dir))
+
+    def transform_content(self, key: str) -> None:
+        if not len(self.files_names) == len(self.new_files_names):
+            print('ERROR: there are not new files names')
             return
-        print(f'{self.working_dir} contains the following file(s)')
-        [print("%3d: %s" % (i, self.files_names[i])) for i in range(len(self.files_names))]
-    
-    def parse_indices(self, indxs_str):
-        indices = []
-        indxs_str = indxs_str.split(',')
-        for sub_str in indxs_str:
-            if '-' in sub_str:
-                sub_str = sub_str.split('-')
-                [indices.append(i) for i in range(int(sub_str[0]), int(sub_str[1])+1)]
-            else:
-                indices.append(int(sub_str))
-        return indices
-    
-if __name__ == '__main__':
-    args = sys.argv[1:]
-    fm = FileManager()
-    fm.set_working_dir(args[0])
-    if len(args) == 2:
-        indices = fm.parse_indices(args[1])
-        print(indices)
-
-# TODO: 
-# create .bat file by indices passed by user
-
+        for i in range(len(self.files_names)):
+            Encryptor.crypt_content(self.working_dir, self.files_names[i], self.new_files_names[i], key)
