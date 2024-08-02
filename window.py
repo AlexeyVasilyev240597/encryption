@@ -9,13 +9,14 @@ WINDOW_HEIGHT = 600
 WINDOW_WIDTH  = 800
 
 BUTTON_HEIGHT = 60
-BUTTON_WIDTH  = 150
+BUTTON_WIDTH  = 120
 
 class Stage(IntEnum):
     START = 0,
     MODE  = 1,
     FILES = 2,
-    RUN   = 3  
+    RUN   = 3,
+    RESET = 4
 
 class Window(QWidget):
     def __init__(self):
@@ -42,6 +43,7 @@ class Window(QWidget):
             Stage.MODE:  self.set_mode,
             Stage.FILES: self.choose_files,
             Stage.RUN:   self.crypt_files,
+            Stage.RESET: self.next_stage
         }
         for stage in Stage:
             self._add_button(stage, stage_to_method[stage])
