@@ -16,16 +16,17 @@ class Stage(IntEnum):
     MODE  = 1,
     FILES = 2,
     RUN   = 3,
-    RESET = 4
 
 class Window(QWidget):
     def __init__(self):
         super().__init__()
-
+        self.stage = Stage.START
+        
         self.setWindowTitle("Encryptor")
         self.setFixedSize(QSize(WINDOW_WIDTH, WINDOW_HEIGHT))
         
-        self._init_buttons()
+        self._init_stage_buttons()
+        self._add_reset_button()
         
         self.text_box = QPlainTextEdit(parent=self)
         self.text_box.setFixedSize(4 * BUTTON_WIDTH, 5 * BUTTON_HEIGHT)
@@ -35,32 +36,42 @@ class Window(QWidget):
         # layout = QVBoxLayout()
         # layout.addWidget(start_button)
         # self.setLayout(layout)
+        self.reset()
 
-    def _init_buttons(self):
+    def _init_stage_buttons(self):
         self.buttons = {}
         stage_to_method = {
             Stage.START: self.pick_working_dir,
             Stage.MODE:  self.set_mode,
             Stage.FILES: self.choose_files,
-            Stage.RUN:   self.crypt_files,
-            Stage.RESET: self.next_stage
+            Stage.RUN:   self.crypt_files
         }
         for stage in Stage:
-            self._add_button(stage, stage_to_method[stage])
-        # init stage
-        self.stage = Stage(0)
-        self.buttons[self.stage].setDisabled(False)
+            self._add_stage_button(stage, stage_to_method[stage])
 
-    def _add_button(self, stage, method_to_connect):
+    def _add_stage_button(self, stage, method_to_connect):
         button = QPushButton(text=stage.name, parent=self)
         button.setStyleSheet("font-size: 16px;")
         button.setFixedSize(BUTTON_WIDTH, BUTTON_HEIGHT)
-        # TODO: create a dict
         button.clicked.connect(method_to_connect)
         button.move((WINDOW_WIDTH * (2 * stage.value + 1) // len(Stage) - BUTTON_WIDTH) // 2, 
                     BUTTON_HEIGHT // 2)
         button.setDisabled(True)
         self.buttons[stage] = button
+    
+    def _add_reset_button(self):
+        button = QPushButton(text="RESET", parent=self)
+        button.setStyleSheet("font-size: 16px;")
+        button.setFixedSize(BUTTON_HEIGHT, BUTTON_HEIGHT)
+        button.clicked.connect(self.reset)
+        button.move((WINDOW_WIDTH - BUTTON_HEIGHT), WINDOW_HEIGHT - BUTTON_HEIGHT)
+        self.reset_button = button
+    
+    def reset(self):
+        self.buttons[self.stage].setDisabled(True)
+        self.stage = Stage.START
+        self.buttons[self.stage].setDisabled(False)
+        self.text_box.setPlainText("")
     
     def next_stage(self):
         self.buttons[self.stage].setDisabled(True)
