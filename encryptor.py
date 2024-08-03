@@ -7,8 +7,10 @@ from pathlib import Path
 # from transliterate import translit
 
 class Mode(IntEnum):
-    ENCRYPT = 1,
-    DECRYPT = -1
+    # ENCRYPT = 1,
+    # DECRYPT = -1
+    EN =  1,
+    DE = -1
 
 MIN_KEY_LEN = {'FILE_NAME': 6, 'CONTENT': 15}
 
@@ -72,7 +74,7 @@ class Encryptor:
     #         return False
     
     # Caesar cipher
-    def crypt_name(file_name: str, mode: Mode, key: str) -> Path:
+    def crypt_name(file_name: str, mode: Mode, key: str) -> str:
         shift_dir = mode.value
         N_a = len(alphabet)
         N_k = len(key)
@@ -81,7 +83,7 @@ class Encryptor:
         for i in range(len(new_file_name)):
             cur_pos = alphabet.index(new_file_name[i])
             new_file_name[i] = alphabet[(cur_pos + shift_dir*ord(key[i % N_k])) % N_a]
-        new_file_name = Path("".join([str(c) for c in new_file_name]))
+        new_file_name = "".join([str(c) for c in new_file_name])
 
         return new_file_name
     

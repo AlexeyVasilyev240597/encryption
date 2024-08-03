@@ -10,7 +10,8 @@ class FileManager:
         self.working_dir = ''    
     
     def set_working_dir(self, working_dir: str) -> str:
-        self.cur_dir = working_dir.split(os.sep)[-1]
+        # self.cur_dir = working_dir.split(os.sep)[-1]
+        self.cur_dir = working_dir.split('/')[-1]
         working_dir = Path(working_dir)
         if working_dir.exists():
             self.working_dir = working_dir
@@ -22,7 +23,7 @@ class FileManager:
     def _list_of_files(self) -> str:
         if not self.working_dir:
             return 'ERROR: The working dir is not set'
-        self.files_names = glob.glob(str(self.working_dir) + os.sep + '*')
+        self.files_names = glob.glob(str(self.working_dir) + os.sep + '*.*')
         self.files_names = [fn.split(os.sep)[-1] for fn in self.files_names]
         if len(self.files_names) == 0:
             return f'There are no files in {self.working_dir}'
