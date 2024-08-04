@@ -3,8 +3,6 @@ import os
 
 from encryptor import Mode, Encryptor
 
-from pathlib import Path
-
 class FileManager:
     def __init__(self) -> None:
         self.working_dir = ''
@@ -32,7 +30,7 @@ class FileManager:
     def _list_of_files(self) -> str:
         if not self.working_dir:
             return 'ERROR: The working dir is not set'
-        self.files_names = glob.glob(str(self.working_dir) + os.sep + '*.*')
+        self.files_names = glob.glob(str(self.working_dir) + os.sep + '*')
         self.files_names = [fn.split(os.sep)[-1] for fn in self.files_names]
         if len(self.files_names) == 0:
             return f'There are no files in {self.working_dir}'
@@ -49,5 +47,8 @@ class FileManager:
                 self.new_files_names[mode].append(Encryptor.crypt_name(fn, mode, cur_dir))
 
     def transform_content(self, key: str) -> None:
-        for i in range(len(self.files_to_crypt)):
+        if len(key) <= 15:
+            print('WARNING: Too short key!')
+            return
+        for i in range(len(self.files_names)):
             Encryptor.crypt_content(self.working_dir, self.files_names[i], self.new_files_names[self.mode][i], key)

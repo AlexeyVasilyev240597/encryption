@@ -81,6 +81,7 @@ class Window(QWidget):
         self.key_box.setFixedSize(ks[0], ks[1])
         kp = shift_on_grid([7, 2])
         self.key_box.move(kp[0] ,kp[1])
+        self.message_box.setReadOnly(True)
         
         # layout = QVBoxLayout()
         # layout.addWidget(start_button)
@@ -138,6 +139,7 @@ class Window(QWidget):
             self.choose_files()
             self.show_file_pairs()
         elif self.stage == Stage.CRYPT:
+            self.message_box.setReadOnly(False)
             self.crypt_files()
         self.stage = Stage((self.stage.value + 1) % len(Stage))
     
@@ -156,13 +158,12 @@ class Window(QWidget):
         response = QFileDialog.getOpenFileNames(
             parent=self,
             caption=f'Select files to {self.mode.name}CRYPT',
-            directory=str(fm.working_dir),
-            filter='*.*'
+            directory=str(fm.working_dir)
         )
         fm.set_files_to_crypt(response[0], self.mode)
     
     def crypt_files(self):
-        pass
+        fm.transform_content(self.key_box.toPlainText())
 
 app = QApplication([])
 
