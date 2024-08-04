@@ -7,19 +7,28 @@ from pathlib import Path
 
 class FileManager:
     def __init__(self) -> None:
-        self.working_dir = ''    
+        self.working_dir = ''
     
-    def set_working_dir(self, working_dir: str) -> str:
-        # self.cur_dir = working_dir.split(os.sep)[-1]
-        self.cur_dir = working_dir.split('/')[-1]
-        working_dir = Path(working_dir)
-        if working_dir.exists():
-            self.working_dir = working_dir
-            self._list_of_files()
-            return 'Working dir is set up'
+    def set_working_dir(self, working_dir: str):
+        self.working_dir = working_dir
+        self._list_of_files()
+        
+    def set_files_to_crypt(self, files, mode):
+        self.mode = mode
+        files = [file.split('/')[-1] for file in files]
+        indices_of_chosen = []
+        for i in range(len(self.files_names)):
+            if self.files_names[i] in files:
+                indices_of_chosen.append(i)
+        print(indices_of_chosen)
+        if not len(indices_of_chosen) == len(files):
+            print('WARNING: not all chosen files were found')
         else:
-            return 'ERROR: Passed working dir name does not exist'
-    
+            self.files_names = [self.files_names[index] for index in indices_of_chosen]
+            print(self.files_names)
+            self.new_files_names[mode] = [self.new_files_names[mode][index] for index in indices_of_chosen]
+            print(self.new_files_names[mode])
+            
     def _list_of_files(self) -> str:
         if not self.working_dir:
             return 'ERROR: The working dir is not set'
@@ -31,14 +40,14 @@ class FileManager:
         return f'{self.working_dir} contains the following file(s):'
         # [print("%3d: %s" % (i, self.files_names[i])) for i in range(len(self.files_names))]
     
-    def transform_names(self, mode: Mode) -> None:
-        self.new_files_names = []
+    def transform_names(self) -> None:
+        # cur_dir = working_dir.split(os.sep)[-1]
+        cur_dir = self.working_dir.split('/')[-1]
+        self.new_files_names = {Mode.EN: [], Mode.DE: []}
         for fn in self.files_names:
-            self.new_files_names.append(Encryptor.crypt_name(fn, mode, self.cur_dir))
+            for mode in Mode:
+                self.new_files_names[mode].append(Encryptor.crypt_name(fn, mode, cur_dir))
 
     def transform_content(self, key: str) -> None:
-        if not len(self.files_names) == len(self.new_files_names):
-            print('ERROR: there are not new files names')
-            return
-        for i in range(len(self.files_names)):
-            Encryptor.crypt_content(self.working_dir, self.files_names[i], self.new_files_names[i], key)
+        for i in range(len(self.files_to_crypt)):
+            Encryptor.crypt_content(self.working_dir, self.files_names[i], self.new_files_names[self.mode][i], key)
