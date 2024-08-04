@@ -2,23 +2,36 @@ from enum import IntEnum
 
 from encryptor import Mode
 from file_manager import FileManager
+from params import *
 
 from PyQt6.QtCore import QSize
 from PyQt6.QtWidgets import QApplication, QPushButton, QFileDialog, QWidget, QPlainTextEdit
-
-BLOCK_SIZE = 60
-
-WINDOW_HEIGHT = 8*BLOCK_SIZE
-WINDOW_WIDTH  = 12*BLOCK_SIZE
-
-scale_on_grid = lambda sizes: [BLOCK_SIZE*sizes[0], BLOCK_SIZE*sizes[1]]
-shift_on_grid = lambda pos: [BLOCK_SIZE*pos[0] + BLOCK_SIZE//2, BLOCK_SIZE*pos[1] + BLOCK_SIZE//2]
     
 class Stage(IntEnum):
     START = 0,
     MODE  = 1,
     FILES = 2,
-    CRYPT   = 3,
+    CRYPT = 3,
+
+class MyButton(QPushButton):
+    def __init__(self, text, parent, method_to_connect, pos = Pos.CENTER):
+        super().__init__(text=text, parent=parent)
+        self.setStyleSheet("font-size: 16px;")
+        sizes = scale_on_grid([1, 1])
+        self.setFixedSize(sizes[0], sizes[1])
+        self.clicked.connect(method_to_connect)
+        pos = shift_on_grid([ALIGN[pos], 0])
+        self.move(pos[0], pos[1])
+        self.vis = False
+        self.set_vis()
+    
+    def change_vis(self):
+        self.vis = not self.vis
+        self.set_vis()
+        
+    def set_vis(self):
+        self.setDisabled(not self.vis)
+        self.setVisible(self.vis)
 
 class Window(QWidget):
     def __init__(self):
@@ -27,26 +40,24 @@ class Window(QWidget):
         self.mode = Mode.EN
         
         self.setWindowTitle("Encryptor")
-        self.setFixedSize(QSize(WINDOW_WIDTH, WINDOW_HEIGHT))
+        ws = scale_on_grid(WINDOW_SIZE)
+        self.setFixedSize(QSize(ws[0], ws[1]))
         
-        # self._init_stage_buttons()
-        self.reset_btn = self._add_button(
+        self.reset_btn = MyButton(
             "RESET",
+            self,
             self.reset,
-            [1, 1],
-            [0, 0],
-            False,
-            True
+            Pos.LEFT
         )
+        self.reset_btn.change_vis()
         
-        self.reset_btn = self._add_button(
+        self.next_btn = MyButton(
             "NEXT",
+            self,
             self.next_stage,
-            [1, 1],
-            [10, 0],
-            False,
-            True
+            Pos.RIGHT
         )
+        self.next_btn.change_vis()
         
         
         self.message_box = QPlainTextEdit(parent=self)
@@ -57,21 +68,18 @@ class Window(QWidget):
         self.message_box.setReadOnly(True)
         
         # START stage        
-        self.start_btn = self._add_button(
+        self.start_btn = MyButton(
             Stage.START.name,
-            self.pick_working_dir,
-            [1, 1],
-            [5, 0],
-            False,
-            True
+            self,
+            self.pick_working_dir
         )
+        self.start_btn.change_vis()
         
         # MODE stage        
-        self.mode_btn = self._add_button(
+        self.mode_btn = MyButton(
             Mode.EN.name,
-            self.switch_mode,
-            [1, 1],
-            [5, 0],
+            self,
+            self.switch_mode
         )
         
     
@@ -81,31 +89,17 @@ class Window(QWidget):
         self.key_box.setFixedSize(ks[0], ks[1])
         kp = shift_on_grid([7, 2])
         self.key_box.move(kp[0] ,kp[1])
-        self.message_box.setReadOnly(True)
+        self.key_box.setReadOnly(True)
         
         # layout = QVBoxLayout()
         # layout.addWidget(start_button)
         # self.setLayout(layout)
         self.reset()
 
-
-    def _add_button(self, text, method_to_connect, sizes, pos, disabled = True, vis = False):
-        button = QPushButton(text=text, parent=self)
-        button.setStyleSheet("font-size: 16px;")
-        sizes = scale_on_grid(sizes)
-        button.setFixedSize(sizes[0], sizes[1])
-        button.clicked.connect(method_to_connect)
-        pos = shift_on_grid(pos)
-        button.move(pos[0], pos[1])
-        button.setDisabled(disabled)
-        button.setVisible(vis)
-        return button
-
     def reset(self):
         self.stage = Stage.START
         self.message_box.setPlainText("")
-        self.mode_btn.setDisabled(True)
-        self.mode_btn.setVisible(False)
+        # self.mode_btn.change_vis()
         
     def switch_mode(self):
         self.mode = Mode(-self.mode.value)
@@ -126,20 +120,17 @@ class Window(QWidget):
     def next_stage(self):
         print(f'I am in next stage, cur stage is {self.stage.name}')
         if self.stage == Stage.START:
-            self.start_btn.setDisabled(True)
-            self.start_btn.setVisible(False)
-            self.mode_btn.setDisabled(False)
-            self.mode_btn.setVisible(True)
+            self.start_btn.change_vis()
+            self.mode_btn.change_vis()
             fm.transform_names()
             self.show_file_pairs()
         elif self.stage == Stage.MODE: 
-            self.mode_btn.setDisabled(True)
-            self.mode_btn.setVisible(False)
+            self.mode_btn.change_vis()
         elif self.stage == Stage.FILES:
             self.choose_files()
             self.show_file_pairs()
+            self.key_box.setReadOnly(False)
         elif self.stage == Stage.CRYPT:
-            self.message_box.setReadOnly(False)
             self.crypt_files()
         self.stage = Stage((self.stage.value + 1) % len(Stage))
     

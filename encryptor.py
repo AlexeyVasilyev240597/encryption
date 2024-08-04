@@ -3,8 +3,6 @@ from enum import IntEnum
 from pathlib import Path
 
 class Mode(IntEnum):
-    # ENCRYPT = 1,
-    # DECRYPT = -1
     EN =  1,
     DE = -1
 
