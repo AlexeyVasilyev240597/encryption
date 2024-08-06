@@ -66,22 +66,13 @@ class Window(QWidget):
         mp = shift_on_grid([0, 2])
         self.message_box.move(mp[0], mp[1])
         self.message_box.setReadOnly(True)
-        
-        # START stage        
-        self.start_btn = MyButton(
-            Stage.START.name,
-            self,
-            self.pick_working_dir
-        )
-        self.start_btn.change_vis()
-        
+                
         # MODE stage        
         self.mode_btn = MyButton(
             Mode.EN.name,
             self,
             self.switch_mode
-        )
-        
+        )        
     
         # CRYPT stage
         self.key_box = QPlainTextEdit(parent=self)
@@ -91,15 +82,15 @@ class Window(QWidget):
         self.key_box.move(kp[0] ,kp[1])
         self.key_box.setReadOnly(True)
         
-        # layout = QVBoxLayout()
-        # layout.addWidget(start_button)
-        # self.setLayout(layout)
         self.reset()
 
     def reset(self):
+        if self.stage == Stage.MODE:
+            self.mode_btn.change_vis()
         self.stage = Stage.START
         self.message_box.setPlainText("")
-        # self.mode_btn.change_vis()
+        self.reset_btn.change_vis()
+        self.key_box.setPlainText("")
         
     def switch_mode(self):
         self.mode = Mode(-self.mode.value)
@@ -120,41 +111,58 @@ class Window(QWidget):
     def next_stage(self):
         print(f'I am in next stage, cur stage is {self.stage.name}')
         if self.stage == Stage.START:
-            self.start_btn.change_vis()
-            self.mode_btn.change_vis()
-            fm.transform_names()
-            self.show_file_pairs()
-        elif self.stage == Stage.MODE: 
+            if self.pick_working_dir():
+                self.mode_btn.change_vis()
+                fm.transform_names()
+                self.show_file_pairs()
+                self.reset_btn.change_vis()
+            else:
+                print("WD is not set")
+                return
+        elif self.stage == Stage.MODE:
             self.mode_btn.change_vis()
         elif self.stage == Stage.FILES:
-            self.choose_files()
-            self.show_file_pairs()
-            self.key_box.setReadOnly(False)
+            if self.choose_files():
+                self.show_file_pairs()
+                self.key_box.setReadOnly(False)
+            else:
+                print("Files are not chosen")
+                return
         elif self.stage == Stage.CRYPT:
-            self.crypt_files()
-        self.stage = Stage((self.stage.value + 1) % len(Stage))
+            if self.crypt_files():
+                print("Done")
+                self.reset()
+            return
+        # self.stage = Stage((self.stage.value + 1) % len(Stage))
+        self.stage = Stage(self.stage.value + 1)
     
-    # source: https://learndataanalysis.org/source-code-how-to-use-qfiledialog-file-dialog-in-pyqt5/
-    def pick_working_dir(self):
+    def pick_working_dir(self) -> bool:
         response = QFileDialog.getExistingDirectory(
             self,
             caption='Select working directory'
         )
-        fm.set_working_dir(response)
-        files_list = '\n'.join(fm.files_names)
-        self.message_box.setPlainText(files_list)
-        print(response)
+        if response:
+            fm.set_working_dir(response)
+            print(response)
+            return True
+        else:
+            return False
     
-    def choose_files(self):
+    def choose_files(self) -> bool:
         response = QFileDialog.getOpenFileNames(
             parent=self,
             caption=f'Select files to {self.mode.name}CRYPT',
             directory=str(fm.working_dir)
         )
-        fm.set_files_to_crypt(response[0], self.mode)
+        if not len(response[0]) == 0:
+            fm.set_files_to_crypt(response[0], self.mode)
+            print(response[0])
+            return True
+        else:
+            return False
     
-    def crypt_files(self):
-        fm.transform_content(self.key_box.toPlainText())
+    def crypt_files(self) -> bool:
+        return fm.transform_content(self.key_box.toPlainText())
 
 app = QApplication([])
 

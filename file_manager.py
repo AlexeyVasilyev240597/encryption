@@ -46,9 +46,11 @@ class FileManager:
             for mode in Mode:
                 self.new_files_names[mode].append(Encryptor.crypt_name(fn, mode, cur_dir))
 
-    def transform_content(self, key: str) -> None:
+    def transform_content(self, key: str) -> bool:
         if len(key) <= 15:
             print('WARNING: Too short key!')
-            return
+            return False
         for i in range(len(self.files_names)):
-            Encryptor.crypt_content(self.working_dir, self.files_names[i], self.new_files_names[self.mode][i], key)
+            Encryptor.crypt_content(self.working_dir, self.files_names[i], 
+                                    self.new_files_names[self.mode][i], key)
+        return True
