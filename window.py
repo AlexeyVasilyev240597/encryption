@@ -16,6 +16,7 @@ class Stage(IntEnum):
     MODE  = 1,
     FILES = 2,
     CRYPT = 3,
+    DONE  = 4
 
 class MyButton(QPushButton):
     def __init__(self, text, parent, method_to_connect, pos = Pos.CENTER):
@@ -41,7 +42,6 @@ class Window(QWidget):
     def __init__(self):
         super().__init__()
         self.stage = Stage.START
-        self.mode = Mode.EN
         
         self.setWindowTitle("Encryptor")
         ws = scale_on_grid(WINDOW_SIZE)
@@ -86,16 +86,22 @@ class Window(QWidget):
         kp = shift_on_grid([7, 2])
         self.key_box.move(kp[0] ,kp[1])
         self.key_box.setReadOnly(True)
+        self.key_box.setFont(QFont("Courier"))
         
         self.reset()
 
     def reset(self):
         if self.stage == Stage.MODE:
             self.mode_btn.change_vis()
+        elif self.stage == Stage.DONE:
+            self.next_btn.change_vis()
         self.stage = Stage.START
+        self.mode = Mode.EN
+        self.mode_btn.setText(self.mode.name)
         self.message_box.setPlainText("")
         self.reset_btn.change_vis()
         self.key_box.setPlainText("")
+        self.key_box.setReadOnly(True)
         self.next_btn.setText(self.stage.name)
         
     def switch_mode(self):
@@ -105,12 +111,11 @@ class Window(QWidget):
     
     def show_file_pairs(self):
         M = max([len(name) for name in fm.files_names])
-        print(f'M = {M}')
         
         self.message_box.setPlainText(
             '\n'.join(
                 [
-                    name + ' '*(M-len(name)) + '-> ' + new_name 
+                    name + ' '*(M-len(name)) + ' -> ' + new_name 
                     for name, new_name 
                     in zip(fm.files_names, fm.new_files_names[self.mode])
                 ]
@@ -139,10 +144,12 @@ class Window(QWidget):
                 return
         elif self.stage == Stage.CRYPT:
             if self.crypt_files():
-                print("Done")
-                self.reset()
-            return
-        # self.stage = Stage((self.stage.value + 1) % len(Stage))
+                self.message_box.setPlainText("Done")
+                self.next_btn.change_vis()
+                self.key_box.setPlainText("")
+                self.key_box.setReadOnly(True)
+            else:
+                return
         self.stage = Stage(self.stage.value + 1)
         self.next_btn.setText(self.stage.name)
     
