@@ -91,6 +91,7 @@ class Window(QWidget):
         self.message_box.setPlainText("")
         self.reset_btn.change_vis()
         self.key_box.setPlainText("")
+        self.next_btn.setText(self.stage.name)
         
     def switch_mode(self):
         self.mode = Mode(-self.mode.value)
@@ -135,6 +136,7 @@ class Window(QWidget):
             return
         # self.stage = Stage((self.stage.value + 1) % len(Stage))
         self.stage = Stage(self.stage.value + 1)
+        self.next_btn.setText(self.stage.name)
     
     def pick_working_dir(self) -> bool:
         response = QFileDialog.getExistingDirectory(
