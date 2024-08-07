@@ -1,0 +1,36 @@
+
+[
+    {
+        "Name": "RESET",
+        "Type": "button",
+        "Sizes": [2, 1],
+        "Pos": ["LEFT", "TOP"],
+        "Action": "reset"
+    },
+    {
+        "Name": "NEXT",
+        "Type": "button",
+        "Sizes": [2, 1],
+        "Pos": ["RIGHT", "TOP"],
+        "Action": "next_stage"
+    },
+    {
+        "Name": "MODE",
+        "Type": "button",
+        "Sizes": [1, 1],
+        "Pos": ["CENTER", "TOP"],
+        "Action": "switch_mode"
+    },
+    {
+        "Name": "MESSAGE",
+        "Type": "text_box",
+        "Sizes": [6, 5],
+        "Pos": [0, 2]
+    },
+    {
+        "Name": "KEY",
+        "Type": "text_box",
+        "Sizes": [4, 3],
+        "Pos": [7, 2]
+    }    
+]

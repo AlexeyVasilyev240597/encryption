@@ -1,16 +1,19 @@
 from enum import IntEnum
+import json 
 
 from encryptor import Mode
 from file_manager import FileManager
-from params import *
+from grid import *
 
 from PyQt6.QtGui import QFont
-from PyQt6.QtCore import QSize
 from PyQt6.QtWidgets import QApplication, QPushButton, QFileDialog, QWidget, QPlainTextEdit
 
-# TODO: add stage DONE, on it: 
-#   hide next_btn (maybe rewrite change_vis method -> set_vis(vis: bool)), 
-#   display success message on message_box
+# in pixel units
+BLOCK_SIZE = 60
+# in block units
+WINDOW_SIZE = [12, 8]
+
+
 class Stage(IntEnum):
     START = 0,
     MODE  = 1,
@@ -19,14 +22,12 @@ class Stage(IntEnum):
     DONE  = 4
 
 class MyButton(QPushButton):
-    def __init__(self, text, parent, method_to_connect, pos = Pos.CENTER):
+    def __init__(self, text, parent, method_to_connect, sizes, pos):
         super().__init__(text=text, parent=parent)
         self.setStyleSheet("font-size: 16px;")
-        sizes = scale_on_grid([1, 1])
-        self.setFixedSize(sizes[0], sizes[1])
+        self.setFixedSize(grid.scale_on_grid(sizes))
         self.clicked.connect(method_to_connect)
-        pos = shift_on_grid([ALIGN[pos], 0])
-        self.move(pos[0], pos[1])
+        self.move(grid.shift_on_grid(pos))
         self.vis = False
         self.set_vis()
     
@@ -38,81 +39,100 @@ class MyButton(QPushButton):
         self.setDisabled(not self.vis)
         self.setVisible(self.vis)
 
+class MyTextBox(QPlainTextEdit):
+    def __init__(self, parent, sizes, pos):
+        super().__init__(parent=parent)
+        self.setFixedSize(grid.scale_on_grid(sizes))
+        self.move(grid.shift_on_grid(pos))
+        self.setFont(QFont("Courier"))
+        self.setReadOnly(True)
+        
+        
 class Window(QWidget):
     def __init__(self):
         super().__init__()
         self.stage = Stage.START
         
         self.setWindowTitle("Encryptor")
-        ws = scale_on_grid(WINDOW_SIZE)
-        self.setFixedSize(QSize(ws[0], ws[1]))
+        self.setFixedSize(grid.scale_on_grid(grid.ws))
         
-        self.reset_btn = MyButton(
-            "RESET",
-            self,
-            self.reset,
-            Pos.LEFT
-        )
-        self.reset_btn.change_vis()
+        self.init_widgets("widgets.json")
+        # self.widgets["RESET"] = MyButton(
+        #     "RESET",
+        #     self,
+        #     self.reset,
+        #     Pos.LEFT
+        # )
+        self.widgets["RESET"].change_vis()
         
-        self.next_btn = MyButton(
-            "NEXT",
-            self,
-            self.next_stage,
-            Pos.RIGHT
-        )
-        self.next_btn.change_vis()
+        # self.widgets["NEXT"] = MyButton(
+        #     "NEXT",
+        #     self,
+        #     self.next_stage,
+        #     Pos.RIGHT
+        # )
+        self.widgets["NEXT"].change_vis()
         
         
-        self.message_box = QPlainTextEdit(parent=self)
-        ms = scale_on_grid([6, 5])
-        self.message_box.setFixedSize(ms[0], ms[1])
-        mp = shift_on_grid([0, 2])
-        self.message_box.move(mp[0], mp[1])
-        self.message_box.setFont(QFont("Courier"))
-        self.message_box.setReadOnly(True)
+        # self.widgets["MESSAGE"] = MyTextBox(parent=self)        
                 
-        # MODE stage        
-        self.mode_btn = MyButton(
-            Mode.EN.name,
-            self,
-            self.switch_mode
-        )        
+        # # MODE stage        
+        # self.mode_btn = MyButton(
+        #     Mode.EN.name,
+        #     self,
+        #     self.switch_mode
+        # )        
     
-        # CRYPT stage
-        self.key_box = QPlainTextEdit(parent=self)
-        ks = scale_on_grid([4, 3])
-        self.key_box.setFixedSize(ks[0], ks[1])
-        kp = shift_on_grid([7, 2])
-        self.key_box.move(kp[0] ,kp[1])
-        self.key_box.setReadOnly(True)
-        self.key_box.setFont(QFont("Courier"))
+        # # CRYPT stage
+        # self.widgets["KEY"] = MyTextBox(parent=self)
         
         self.reset()
 
+    def init_widgets(self, json_fn):
+        json_f = open(json_fn)
+        widgets = json.load(json_f)
+        
+        self.widgets = {}
+        for widget in widgets:
+            print(f"Widget name: {widget['Name']}")
+            pos = grid.convert_pos(widget["Pos"], widget["Sizes"])
+            if widget["Type"] == "button":
+                self.widgets[widget["Name"]] = MyButton(
+                    widget["Name"], 
+                    self, 
+                    getattr(self, widget["Action"]),
+                    widget["Sizes"],
+                    pos)
+            elif widget["Type"] == "text_box":
+                self.widgets[widget["Name"]] = MyTextBox(self, widget["Sizes"], pos)
+            else:
+                print(f"Undefined widget type: {widget['Type']}")
+        
+        json_f.close()
+
     def reset(self):
         if self.stage == Stage.MODE:
-            self.mode_btn.change_vis()
+            self.widgets["MODE"].change_vis()
         elif self.stage == Stage.DONE:
-            self.next_btn.change_vis()
+            self.widgets["NEXT"].change_vis()
         self.stage = Stage.START
         self.mode = Mode.EN
-        self.mode_btn.setText(self.mode.name)
-        self.message_box.setPlainText("")
-        self.reset_btn.change_vis()
-        self.key_box.setPlainText("")
-        self.key_box.setReadOnly(True)
-        self.next_btn.setText(self.stage.name)
+        self.widgets["MODE"].setText(self.mode.name)
+        self.widgets["MESSAGE"].setPlainText("")
+        self.widgets["RESET"].change_vis()
+        self.widgets["KEY"].setPlainText("")
+        self.widgets["KEY"].setReadOnly(True)
+        self.widgets["NEXT"].setText(self.stage.name)
         
     def switch_mode(self):
         self.mode = Mode(-self.mode.value)
-        self.mode_btn.setText(self.mode.name)
+        self.widgets["MODE"].setText(self.mode.name)
         self.show_file_pairs()
     
     def show_file_pairs(self):
         M = max([len(name) for name in fm.files_names])
         
-        self.message_box.setPlainText(
+        self.widgets["MESSAGE"].setPlainText(
             '\n'.join(
                 [
                     name + ' '*(M-len(name)) + ' -> ' + new_name 
@@ -126,32 +146,32 @@ class Window(QWidget):
         print(f'I am in next stage, cur stage is {self.stage.name}')
         if self.stage == Stage.START:
             if self.pick_working_dir():
-                self.mode_btn.change_vis()
+                self.widgets["MODE"].change_vis()
                 fm.transform_names()
                 self.show_file_pairs()
-                self.reset_btn.change_vis()
+                self.widgets["RESET"].change_vis()
             else:
                 print("WD is not set")
                 return
         elif self.stage == Stage.MODE:
-            self.mode_btn.change_vis()
+            self.widgets["MODE"].change_vis()
         elif self.stage == Stage.FILES:
             if self.choose_files():
                 self.show_file_pairs()
-                self.key_box.setReadOnly(False)
+                self.widgets["KEY"].setReadOnly(False)
             else:
                 print("Files are not chosen")
                 return
         elif self.stage == Stage.CRYPT:
             if self.crypt_files():
-                self.message_box.setPlainText("Done")
-                self.next_btn.change_vis()
-                self.key_box.setPlainText("")
-                self.key_box.setReadOnly(True)
+                self.widgets["MESSAGE"].setPlainText("Done")
+                self.widgets["NEXT"].change_vis()
+                self.widgets["KEY"].setPlainText("")
+                self.widgets["KEY"].setReadOnly(True)
             else:
                 return
         self.stage = Stage(self.stage.value + 1)
-        self.next_btn.setText(self.stage.name)
+        self.widgets["NEXT"].setText(self.stage.name)
     
     def pick_working_dir(self) -> bool:
         response = QFileDialog.getExistingDirectory(
@@ -179,14 +199,13 @@ class Window(QWidget):
             return False
     
     def crypt_files(self) -> bool:
-        return fm.transform_content(self.key_box.toPlainText())
+        return fm.transform_content(self.widgets["KEY"].toPlainText())
+
 
 app = QApplication([])
-
+grid = Grid(BLOCK_SIZE, WINDOW_SIZE)
 fm = FileManager()
-
 window = Window()
-
 
 window.show()
 app.exec()
