@@ -4,9 +4,13 @@ from encryptor import Mode
 from file_manager import FileManager
 from params import *
 
+from PyQt6.QtGui import QFont
 from PyQt6.QtCore import QSize
 from PyQt6.QtWidgets import QApplication, QPushButton, QFileDialog, QWidget, QPlainTextEdit
-    
+
+# TODO: add stage DONE, on it: 
+#   hide next_btn (maybe rewrite change_vis method -> set_vis(vis: bool)), 
+#   display success message on message_box
 class Stage(IntEnum):
     START = 0,
     MODE  = 1,
@@ -65,6 +69,7 @@ class Window(QWidget):
         self.message_box.setFixedSize(ms[0], ms[1])
         mp = shift_on_grid([0, 2])
         self.message_box.move(mp[0], mp[1])
+        self.message_box.setFont(QFont("Courier"))
         self.message_box.setReadOnly(True)
                 
         # MODE stage        
@@ -99,10 +104,13 @@ class Window(QWidget):
         self.show_file_pairs()
     
     def show_file_pairs(self):
+        M = max([len(name) for name in fm.files_names])
+        print(f'M = {M}')
+        
         self.message_box.setPlainText(
             '\n'.join(
                 [
-                    name + ' -> ' + new_name 
+                    name + ' '*(M-len(name)) + '-> ' + new_name 
                     for name, new_name 
                     in zip(fm.files_names, fm.new_files_names[self.mode])
                 ]
