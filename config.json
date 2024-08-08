@@ -42,14 +42,14 @@
         {
             "Name": "MESSAGE",
             "Type": "text_box",
-            "Sizes": [6, 5],
-            "Pos": ["LEFT", "BOTTOM"]
+            "Sizes": [11, 3],
+            "Pos": [0, 2]
         },
         {
             "Name": "KEY",
             "Type": "text_box",
-            "Sizes": [4, 5],
-            "Pos": ["RIGHT", "BOTTOM"]
+            "Sizes": [11, 1],
+            "Pos": [0, 6]
         }    
     ]
 }

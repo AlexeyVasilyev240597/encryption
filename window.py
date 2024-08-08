@@ -108,8 +108,10 @@ class Window(QWidget, Grid):
         print(f'I am in next stage, cur stage is {self.stage.name}')
         if self.stage == Stage.START:
             if self.pick_working_dir():
-                fm.transform_names()
-                self.show_file_pairs()
+                if fm.transform_names():
+                    self.show_file_pairs()
+                else:
+                    return
             else:
                 print("WD is not set")
                 return
@@ -125,6 +127,8 @@ class Window(QWidget, Grid):
                 self.widgets["text_box"]["MESSAGE"].setPlainText("Done")
                 self.widgets["text_box"]["KEY"].setPlainText("")
                 self.widgets["text_box"]["KEY"].setReadOnly(True)
+            else:
+                return
         elif self.stage == Stage.DONE:
             self.widgets["text_box"]["MESSAGE"].setPlainText("")
         self.stage = Stage((self.stage.value + 1) % len(Stage))

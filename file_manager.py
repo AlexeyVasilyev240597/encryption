@@ -38,13 +38,18 @@ class FileManager:
         return f'{self.working_dir} contains the following file(s):'
         # [print("%3d: %s" % (i, self.files_names[i])) for i in range(len(self.files_names))]
     
-    def transform_names(self) -> None:
+    def transform_names(self) -> bool:
         # cur_dir = working_dir.split(os.sep)[-1]
         cur_dir = self.working_dir.split('/')[-1]
         self.new_files_names = {Mode.EN: [], Mode.DE: []}
-        for fn in self.files_names:
-            for mode in Mode:
-                self.new_files_names[mode].append(Encryptor.crypt_name(fn, mode, cur_dir))
+        try:
+            for fn in self.files_names:
+                for mode in Mode:
+                    self.new_files_names[mode].append(Encryptor.crypt_name(fn, mode, cur_dir))
+            return True
+        except:
+            print("WARNING: invalid file name")
+            return False
 
     def transform_content(self, key: str) -> bool:
         if len(key) <= 15:
