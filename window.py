@@ -30,7 +30,7 @@ class MyButton(QPushButton):
         self.clicked.connect(getattr(parent, confs["Action"]))
         self.move(grid.shift_on_grid(pos))
         self._set_stages(confs["Seeing"])
-        self.set_vis(Stage.START)
+        self.set_vis(Stage.START)        
     
     def _set_stages(self, seeing):
         is_all = seeing["Stage"] == "all"
@@ -42,6 +42,7 @@ class MyButton(QPushButton):
         vis = stage in self.stages
         self.setDisabled(not vis)
         self.setVisible(vis)
+
 
 class MyTextBox(QPlainTextEdit):
     def __init__(self, parent, sizes, pos):
@@ -56,6 +57,7 @@ class Window(QWidget):
     def __init__(self):
         super().__init__()
         self.stage = Stage.START
+        self.mode = Mode.EN
         
         self.setWindowTitle("Encryptor")
         self.setFixedSize(grid.scale_on_grid(grid.ws))
@@ -85,14 +87,10 @@ class Window(QWidget):
         [button.set_vis(self.stage) for button in self.widgets["button"].values()]
 
     def reset(self):
-        self.stage = Stage.START
+        self.stage = Stage.DONE
         self.mode = Mode.EN
         self.widgets["button"]["MODE"].setText(self.mode.name)
-        self.widgets["text_box"]["MESSAGE"].setPlainText("")
-        self.widgets["text_box"]["KEY"].setPlainText("")
-        self.widgets["text_box"]["KEY"].setReadOnly(True)
-        self.widgets["button"]["NEXT"].setText(self.stage.name)
-        self.update_buttons()
+        self.next_stage()
         
     def switch_mode(self):
         self.mode = Mode(-self.mode.value)
@@ -133,10 +131,9 @@ class Window(QWidget):
                 self.widgets["text_box"]["MESSAGE"].setPlainText("Done")
                 self.widgets["text_box"]["KEY"].setPlainText("")
                 self.widgets["text_box"]["KEY"].setReadOnly(True)
-                self.update_buttons()
-            else:
-                return
-        self.stage = Stage(self.stage.value + 1)
+        elif self.stage == Stage.DONE:
+            self.widgets["text_box"]["MESSAGE"].setPlainText("")
+        self.stage = Stage((self.stage.value + 1) % len(Stage))
         self.widgets["button"]["NEXT"].setText(self.stage.name)
         self.update_buttons()
     
