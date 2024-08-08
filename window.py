@@ -3,16 +3,10 @@ import json
 
 from encryptor import Mode
 from file_manager import FileManager
-from grid import *
+from grid import Grid
 
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QApplication, QPushButton, QFileDialog, QWidget, QPlainTextEdit
-
-# in pixel units
-BLOCK_SIZE = 60
-# in block units
-WINDOW_SIZE = [12, 8]
-
 
 class Stage(IntEnum):
     START = 0,
@@ -23,12 +17,12 @@ class Stage(IntEnum):
 
 class MyButton(QPushButton):
     def __init__(self, parent, confs):
-        pos = grid.convert_pos(confs["Pos"], confs["Sizes"])
+        pos = parent.convert_pos(confs["Pos"], confs["Sizes"])
         super().__init__(text=confs["Name"], parent=parent)
         self.setStyleSheet("font-size: 16px;")
-        self.setFixedSize(grid.scale_on_grid(confs["Sizes"]))
+        self.setFixedSize(parent.scale_on_grid(confs["Sizes"]))
         self.clicked.connect(getattr(parent, confs["Action"]))
-        self.move(grid.shift_on_grid(pos))
+        self.move(parent.shift_on_grid(pos))
         self._set_stages(confs["Seeing"])
         self.set_vis(Stage.START)        
     
@@ -47,41 +41,41 @@ class MyButton(QPushButton):
 class MyTextBox(QPlainTextEdit):
     def __init__(self, parent, sizes, pos):
         super().__init__(parent=parent)
-        self.setFixedSize(grid.scale_on_grid(sizes))
-        self.move(grid.shift_on_grid(pos))
+        self.setFixedSize(parent.scale_on_grid(sizes))
+        self.move(parent.shift_on_grid(pos))
         self.setFont(QFont("Courier"))
         self.setReadOnly(True)
         
         
-class Window(QWidget):
-    def __init__(self):
-        super().__init__()
+class Window(QWidget, Grid):
+    def __init__(self, config_fn):
+        QWidget.__init__(self)
+        config_f = open(config_fn)
+        config = json.load(config_f)
+        config_f.close()
+        Grid.__init__(self, config["Window"]["Block_size"], config["Window"]["Window_sizes"])
         self.stage = Stage.START
         self.mode = Mode.EN
         
         self.setWindowTitle("Encryptor")
-        self.setFixedSize(grid.scale_on_grid(grid.ws))
+        self.setFixedSize(self.scale_on_grid(self.ws))
         
-        self.init_widgets("widgets.json")
+        self.init_widgets(config["Widgets"])
         
         self.reset()
 
-    def init_widgets(self, json_fn):
-        json_f = open(json_fn)
-        widgets = json.load(json_f)
-        
+    def init_widgets(self, widgets):
         self.widgets = {"button": {}, "text_box": {}}
         for widget in widgets:
             # print(f"Widget name: {widget['Name']}")
-            pos = grid.convert_pos(widget["Pos"], widget["Sizes"])
+            pos = self.convert_pos(widget["Pos"], widget["Sizes"])
             if widget["Type"] == "button":
                 self.widgets[widget["Type"]][widget["Name"]] = MyButton(self, widget)
             elif widget["Type"] == "text_box":
                 self.widgets[widget["Type"]][widget["Name"]] = MyTextBox(self, widget["Sizes"], pos)
             else:
                 print(f"Undefined widget type: {widget['Type']}")
-        
-        json_f.close()
+
     
     def update_buttons(self):
         [button.set_vis(self.stage) for button in self.widgets["button"].values()]
@@ -140,8 +134,7 @@ class Window(QWidget):
     def pick_working_dir(self) -> bool:
         response = QFileDialog.getExistingDirectory(
             self,
-            caption='Select working directory'
-        )
+            caption='Select working directory')
         if response:
             fm.set_working_dir(response)
             print(response)
@@ -167,9 +160,8 @@ class Window(QWidget):
 
 
 app = QApplication([])
-grid = Grid(BLOCK_SIZE, WINDOW_SIZE)
 fm = FileManager()
-window = Window()
+window = Window("config.json")
 
 window.show()
 app.exec()

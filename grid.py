@@ -1,20 +1,6 @@
-from PyQt6.QtCore import QSize, QPoint
+from PyQt6.QtCore import QObject, QSize, QPoint
 
-from enum import IntEnum
-
-WINDOW_SIZE = [12, 8]
-
-#   0 1 2 3 4 5 6 7 8 9 10
-# 0 * o o * * o * * o o *
-# 1 * * * * * * * * * * *
-# 2 / - - - - \ * / - - \
-# 3 |         | * |     |
-# 4 |         | * \ - - /
-# 5 |         | * * * * *
-# 6 \ - - - - / * * * * *
-
-
-class Grid:
+class Grid(QObject):
     def __init__(self, bs: int, ws: list) -> None:
         # block size
         self.bs = bs
